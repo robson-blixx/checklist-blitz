@@ -23,14 +23,15 @@
     return value.toISOString().slice(0, 10);
   }
   function today() {
-    const now = new Date();
-    return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
   }
   function dueDate(record) { return addDays(record.issuedAt, operations[record.operation]); }
   function status(record) {
     const due = dueDate(record), now = today();
     if (!due) return 'Pendente';
-    if (now > due) return now === addDays(due, 1) ? 'Vencido' : 'Atrasado';
+    if (now > due) return 'Vencido';
     if (now === due) return 'Vence hoje';
     if (now >= addDays(due, -alertDays)) return record.alertSent ? 'Solicitado' : 'Aviso pendente';
     return 'Em dia';
@@ -90,7 +91,7 @@
     $('totalCount').textContent = records.length;
     $('okCount').textContent = records.filter(r => status(r) === 'Em dia').length;
     $('warningCount').textContent = records.filter(r => ['Solicitado', 'Aviso pendente', 'Vence hoje'].includes(status(r))).length;
-    $('expiredCount').textContent = records.filter(r => ['Vencido', 'Atrasado'].includes(status(r))).length;
+    $('expiredCount').textContent = records.filter(r => status(r) === 'Vencido').length;
   }
   function openForm(record) {
     $('form').reset(); $('formMessage').textContent = ''; $('recordId').value = record?.id || '';
