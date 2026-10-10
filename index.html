@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10213e">
+  <title>Checklist Blitz</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f4f7fb}*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}.top{background:#10213e;color:white;padding:28px max(20px,calc((100vw - 1220px)/2))}.top h1{margin:4px 0;font-size:clamp(25px,3vw,34px)}.top p{margin:4px 0;color:#c2d0e6}.wrap{max-width:1220px;margin:25px auto;padding:0 16px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.card,.panel{background:white;border:1px solid #e3eaf3;border-radius:14px;box-shadow:0 5px 18px #1c2e4e0b}.card{padding:16px}.card small{color:#64748b}.card strong{display:block;font-size:27px;margin-top:6px}.panel{overflow:hidden;margin-bottom:18px}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid #e3eaf3}.head h2{margin:0;font-size:18px}.head p{margin:5px 0 0;color:#64748b;font-size:13px}button{border:0;border-radius:8px;padding:10px 13px;font-weight:700;background:#1667d9;color:#fff}button:hover{filter:brightness(.94)}button.secondary{background:#eaf3ff;color:#1657a5}button.danger{background:#fff0f1;color:#bd3242}button.small{padding:7px 9px;font-size:12px}.filters{display:flex;gap:8px;flex-wrap:wrap;padding:13px 20px}.filters button{background:#edf2f8;color:#40516c}.filters button.active{background:#10213e;color:white}.tablewrap{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:970px}th,td{padding:12px 15px;border-bottom:1px solid #e6ebf2;text-align:left;font-size:13px}th{background:#f9fbfd;color:#64748b;text-transform:uppercase;font-size:11px;letter-spacing:.04em}td.actions{white-space:nowrap}.badge{display:inline-block;border-radius:99px;padding:5px 9px;font-size:12px;font-weight:700}.jet{background:#e6f2ff;color:#0e5db3}.total{background:#f0eaff;color:#6d3caa}.ok{background:#e9f8f1;color:#14845c}.warn{background:#fff4df;color:#a56300}.bad{background:#fff0f1;color:#bd3242}.neutral{background:#edf2f8;color:#526078}.empty{padding:35px;text-align:center;color:#64748b}.form{padding:20px;display:none}.form.open{display:block}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:700;color:#44536b}.field input,.field select{width:100%;padding:10px;border:1px solid #ccd5e2;border-radius:8px;background:white}.hint{font-size:12px;color:#66768e;line-height:1.5}.formfooter{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}.notice{padding:17px 20px;background:#edf5ff;color:#365477;font-size:13px;line-height:1.5}.notice strong{color:#164f94}.error{color:#b52c3d}.success{color:#137e53}@media(max-width:750px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr 1fr}.head{align-items:flex-start;flex-direction:column}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="top"><h1>Checklist Blitz</h1><p>Controle de checklists por operação, com prazos independentes para Jet e Total.</p></header>
+  <main class="wrap">
+    <section class="stats" aria-label="Resumo"><div class="card"><small>Cadastros</small><strong id="totalCount">0</strong></div><div class="card"><small>Em dia</small><strong id="okCount">0</strong></div><div class="card"><small>Solicitados</small><strong id="warningCount">0</strong></div><div class="card"><small>Vencidos ou atrasados</small><strong id="expiredCount">0</strong></div></section>
+    <section class="panel"><div class="head"><div><h2>Cadastros de checklists</h2><p>O mesmo motorista pode ter um cadastro na Jet e outro na Total.</p></div><button id="newBtn" type="button">+ Novo cadastro</button></div>
+      <form id="form" class="form" novalidate><input type="hidden" id="recordId"><div class="grid">
+        <div class="field"><label for="operation">Operação</label><select id="operation" required><option value="">Selecione</option><option>Jet</option><option>Total</option></select></div>
+        <div class="field"><label for="driverName">Motorista</label><input id="driverName" maxlength="90" required></div>
+        <div class="field"><label for="driverPhone">WhatsApp do motorista</label><input id="driverPhone" type="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999"></div>
+        <div class="field"><label for="plate">Placa</label><input id="plate" maxlength="8" required></div>
+        <div class="field"><label for="issuedAt">Data de emissão do checklist</label><input id="issuedAt" type="date" required></div>
+        <div class="field"><label for="dueAt">Vencimento calculado</label><input id="dueAt" type="date" readonly></div>
+        <div class="field"><label for="typology">Tipologia</label><select id="typology" required><option value="">Selecione</option><option>3/4</option><option>Toco</option><option>Truck</option><option>Cavalo/Carreta</option><option>Fiorino</option><option>Van</option><option>VUC</option></select></div>
+        <div class="field"><label for="tracker">Rastreador</label><select id="tracker"><option value="">Selecione</option><option>Omnilink</option><option>Sascar</option><option>Onix</option><option>Sighra</option><option>Outro</option></select></div>
+        <div class="field"><label for="adminPhone">WhatsApp do responsável (futuro aviso)</label><input id="adminPhone" type="tel" inputmode="tel" maxlength="24" placeholder="(11) 99999-9999"></div>
+      </div><p class="hint">Jet: 20 dias após a emissão. Total: 15 dias após a emissão. O status muda automaticamente conforme as datas.</p><div class="formfooter"><button type="button" class="secondary" id="cancelBtn">Cancelar</button><button type="submit">Salvar cadastro</button></div><p id="formMessage" role="status"></p></form>
+      <div class="filters" aria-label="Filtrar operação"><button type="button" data-filter="all" class="active">Todas</button><button type="button" data-filter="Jet">Jet</button><button type="button" data-filter="Total">Total</button></div>
+      <div class="tablewrap"><table><thead><tr><th>Motorista</th><th>Operação</th><th>Placa</th><th>Tipologia</th><th>Emissão</th><th>Vencimento</th><th>Status</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="rows"></tbody></table><div class="empty" id="empty">Nenhum cadastro nesta operação.</div></div>
+    </section>
+    <div class="panel notice"><strong>WhatsApp preparado para uma próxima etapa.</strong> Os números ficam salvos neste navegador. Esta versão não envia mensagens automaticamente. Para testar os prazos, você pode cadastrar um checklist com data de emissão anterior.</div>
+  </main>
+  <script>
+    (()=>{'use strict';
+      const KEY='checklist-blitz-v2', OLD_KEY='blixx-checklist-monitor-v1';
+      const $=id=>document.getElementById(id); let filter='all';
+      const allowedOps=['Jet','Total'], allowedTypes=['3/4','Toco','Truck','Cavalo/Carreta','Fiorino','Van','VUC'];
+      function dateParts(iso){if(!/^\d{4}-\d{2}-\d{2}$/.test(iso||''))return null;const [y,m,d]=iso.split('-').map(Number);const value=new Date(Date.UTC(y,m-1,d));return value.toISOString().slice(0,10)===iso?value:null}
+      function addDays(iso,days){const d=dateParts(iso);if(!d)return '';d.setUTCDate(d.getUTCDate()+days);return d.toISOString().slice(0,10)}
+      function today(){const now=new Date();return [now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-')}
+      function dueDate(r){return addDays(r.issuedAt,r.operation==='Jet'?20:15)}
+      function status(r){const due=dueDate(r),now=today();if(!due)return 'Pendente';if(now>due)return now===addDays(due,1)?'Vencido':'Atrasado';if(now===due)return 'Vence hoje';if(now>=addDays(due,-5))return 'Solicitado';return 'Em dia'}
+      function fmt(iso){return iso?iso.split('-').reverse().join('/'):''}
+      function digits(s){return String(s||'').replace(/\D/g,'')}
+      function load(){try{const value=JSON.parse(localStorage.getItem(KEY));if(Array.isArray(value))return value.filter(r=>r&&allowedOps.includes(r.operation)&&dateParts(r.issuedAt))}catch(_){}return []}
+      let records=load();
+      function save(){localStorage.setItem(KEY,JSON.stringify(records))}
+      function updateDue(){$('dueAt').value=allowedOps.includes($('operation').value)?addDays($('issuedAt').value,$('operation').value==='Jet'?20:15):''}
+      function makeCell(row,text){const td=document.createElement('td');td.textContent=text;row.append(td);return td}
+      function render(){const body=$('rows');body.replaceChildren();const visible=records.filter(r=>filter==='all'||r.operation===filter).sort((a,b)=>dueDate(a).localeCompare(dueDate(b)));$('empty').hidden=visible.length>0;
+        for(const r of visible){const tr=document.createElement('tr');makeCell(tr,r.driverName);const op=makeCell(tr,'');const opBadge=document.createElement('span');opBadge.className='badge '+r.operation.toLowerCase();opBadge.textContent=r.operation;op.append(opBadge);makeCell(tr,r.plate);makeCell(tr,r.typology);makeCell(tr,fmt(r.issuedAt));makeCell(tr,fmt(dueDate(r)));const s=status(r),sc=makeCell(tr,'');const badge=document.createElement('span');badge.className='badge '+(s==='Em dia'?'ok':s==='Solicitado'||s==='Vence hoje'?'warn':s==='Pendente'?'neutral':'bad');badge.textContent=s;sc.append(badge);makeCell(tr,r.driverPhone||'—');const actions=makeCell(tr,'');actions.className='actions';for(const [label,action,cls] of [['Editar','edit','secondary'],['Excluir','delete','danger']]){const btn=document.createElement('button');btn.type='button';btn.className='small '+cls;btn.textContent=label;btn.dataset.action=action;btn.dataset.id=r.id;actions.append(btn)}body.append(tr)}
+        $('totalCount').textContent=records.length;$('okCount').textContent=records.filter(r=>status(r)==='Em dia').length;$('warningCount').textContent=records.filter(r=>['Solicitado','Vence hoje'].includes(status(r))).length;$('expiredCount').textContent=records.filter(r=>['Vencido','Atrasado'].includes(status(r))).length}
+      function openForm(r){$('form').reset();$('formMessage').textContent='';$('recordId').value=r?.id||'';for(const key of ['operation','driverName','driverPhone','plate','issuedAt','typology','tracker','adminPhone'])if(r)$(key).value=r[key]||'';updateDue();$('form').classList.add('open');$('driverName').focus()}
+      $('newBtn').onclick=()=>openForm();$('cancelBtn').onclick=()=>{$('form').classList.remove('open')};$('operation').onchange=updateDue;$('issuedAt').onchange=updateDue;
+      $('form').onsubmit=e=>{e.preventDefault();const r={id:$('recordId').value||crypto.randomUUID()};for(const key of ['operation','driverName','driverPhone','plate','issuedAt','typology','tracker','adminPhone'])r[key]=$(key).value.trim();r.plate=r.plate.toUpperCase();r.driverPhone=digits(r.driverPhone);r.adminPhone=digits(r.adminPhone);if(!allowedOps.includes(r.operation)||!r.driverName||!r.plate||!dateParts(r.issuedAt)||!allowedTypes.includes(r.typology)){$('formMessage').textContent='Preencha operação, motorista, placa, emissão e tipologia.';$('formMessage').className='error';return}if((r.driverPhone&&r.driverPhone.length<10)||(r.adminPhone&&r.adminPhone.length<10)){$('formMessage').textContent='Informe telefone com DDD ou deixe o campo vazio.';$('formMessage').className='error';return}const i=records.findIndex(x=>x.id===r.id);if(i>=0)records[i]=r;else records.push(r);save();render();$('form').classList.remove('open')};
+      $('rows').onclick=e=>{const btn=e.target.closest('button[data-action]');if(!btn)return;const r=records.find(x=>x.id===btn.dataset.id);if(!r)return;if(btn.dataset.action==='edit')openForm(r);if(btn.dataset.action==='delete'&&confirm('Excluir o cadastro de '+r.driverName+' na '+r.operation+'?')){records=records.filter(x=>x.id!==r.id);save();render()}};
+      document.querySelectorAll('[data-filter]').forEach(btn=>btn.onclick=()=>{filter=btn.dataset.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.classList.toggle('active',b===btn));render()});render();setInterval(render,60000);
+    })();
+  </script>
+</body>
+</html>
