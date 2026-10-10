@@ -1,13 +1,29 @@
 # Checklist Blitz
 
-Controle de checklists para as operações **Jet** e **Total**. O mesmo motorista pode ter um cadastro independente em cada operação.
+Painel público em GitHub Pages com registros Jet e Total independentes. O mesmo motorista pode aparecer nas duas operações. Jet vence 20 dias após a emissão; Total vence 15 dias após a emissão. O responsável escolhe de 0 a 20 dias antes do vencimento para o aviso; o padrão é 5 dias. Nesse período, o status passa para **Solicitado**. As tipologias disponíveis são 3/4, Toco, Truck, Cavalo/Carreta, Fiorino, Van e VUC.
 
-- Jet: vencimento 20 dias após a data de emissão.
-- Total: vencimento 15 dias após a data de emissão.
-- Cinco dias antes do vencimento: status **Solicitado**.
-- No dia do vencimento: **Vence hoje**; no dia seguinte: **Vencido**; depois: **Atrasado**.
-- Tipologias: 3/4, Toco, Truck, Cavalo/Carreta, Fiorino, Van e VUC.
+## Estado atual
 
-Abra `index.html` no navegador ou execute `python server.py` para testar localmente.
+O painel pode ser usado no navegador em modo local. Para cadastros compartilhados e avisos automáticos, é necessário hospedar `backend.py` em um serviço Python que permaneça ligado e tenha disco persistente. A página permite informar o endereço HTTPS desse serviço e uma chave privada. Ao conectar, o usuário pode enviar os cadastros locais para o serviço.
 
-Os registros e telefones ficam no armazenamento local do navegador. A versão publicada no GitHub Pages distribui as atualizações do **código** quando a página é recarregada, mas os cadastros de navegadores diferentes não são compartilhados. O arquivo `server.py` é apenas um servidor local; o GitHub Pages não executa Python. O envio automático por WhatsApp e o compartilhamento de cadastros exigirão uma próxima etapa com um serviço Python hospedado e armazenamento persistente. Nenhuma mensagem é enviada nesta versão.
+O número remetente **não fica no repositório**. Ele deve ser registrado na WhatsApp Business Platform da Meta. O código usa o `phone number ID` dessa conta e um token de acesso, ambos definidos como variáveis privadas no serviço hospedado. Também é necessário um modelo de mensagem aprovado com três parâmetros de texto, nesta ordem: nome do motorista, operação e data de vencimento. O telefone do responsável fica como variável privada do serviço.
+
+## Configuração do serviço Python
+
+Defina estas variáveis no provedor de hospedagem, sem incluí-las em arquivos públicos:
+
+```text
+CHECKLIST_ADMIN_TOKEN=<chave aleatória longa para entrar no painel>
+CHECKLIST_DB_PATH=<caminho de um disco persistente>/checklist.db
+CHECKLIST_SITE_ORIGIN=https://robson-blixx.github.io
+CHECKLIST_ADMIN_PHONE=<telefone do responsável com código do país>
+WHATSAPP_PHONE_NUMBER_ID=<ID do número registrado na Meta>
+WHATSAPP_ACCESS_TOKEN=<token da Meta>
+WHATSAPP_TEMPLATE_NAME=<nome do modelo aprovado>
+WHATSAPP_TEMPLATE_LANG=pt_BR
+PORT=<porta exigida pelo provedor>
+```
+
+Inicie com `python backend.py`. O serviço oferece `/health`, `/records` e `/settings`. A verificação roda diariamente a partir das 09h no fuso de São Paulo. Cada destinatário recebe no máximo um aviso por cadastro e vencimento: um para o motorista e um para o responsável. Quando o checklist é renovado com nova data de emissão, o novo vencimento inicia outro ciclo. O serviço precisa ficar ligado; se estiver desligado, não envia. Teste primeiro com destinatários autorizados antes de usar em produção.
+
+O GitHub Pages não executa Python. A publicação do painel no GitHub não hospeda `backend.py` nem ativa envios por si só. Nunca coloque token da Meta, chave de acesso, número privado ou banco de dados no repositório público.
