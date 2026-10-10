@@ -115,7 +115,7 @@ def send_template(phone, record):
 
 def dispatch_due_alerts(today=None):
     """Sends once per recipient and checklist alert date; safe to rerun daily."""
-    if not (PHONE_ID and ACCESS_TOKEN and TEMPLATE):
+    if not (PHONE_ID and ACCESS_TOKEN and TEMPLATE and ADMIN_PHONE):
         return {"ready": False, "sent": 0}
     today = today or datetime.now(TZ).date()
     sent = 0
@@ -179,7 +179,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         if path == "/health":
-            return self._json(200, {"ok": True, "whatsappReady": bool(PHONE_ID and ACCESS_TOKEN and TEMPLATE)})
+            return self._json(200, {"ok": True, "whatsappReady": bool(PHONE_ID and ACCESS_TOKEN and TEMPLATE and ADMIN_PHONE)})
         if path not in ("/records", "/settings"):
             return self._json(404, {"error": "Não encontrado"})
         if not self._authorized():
@@ -188,6 +188,12 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/settings":
                 return self._json(200, {"alertDays": get_alert_days(db)})
             rows = [json.loads(row["data"]) for row in db.execute("SELECT data FROM records")]
+            for record in rows:
+                sent_to = {row["recipient"] for row in db.execute(
+                    "SELECT recipient FROM deliveries WHERE record_id=? AND due_date=?",
+                    (record["id"], due_date(record).isoformat()))}
+                expected = {record["driverPhone"], ADMIN_PHONE}
+                record["alertSent"] = bool(ADMIN_PHONE) and expected.issubset(sent_to)
         self._json(200, rows)
 
     def do_PUT(self):

@@ -32,7 +32,7 @@
     if (!due) return 'Pendente';
     if (now > due) return now === addDays(due, 1) ? 'Vencido' : 'Atrasado';
     if (now === due) return 'Vence hoje';
-    if (now >= addDays(due, -alertDays)) return 'Solicitado';
+    if (now >= addDays(due, -alertDays)) return record.alertSent ? 'Solicitado' : 'Aviso pendente';
     return 'Em dia';
   }
   function formatted(iso) { return iso ? iso.split('-').reverse().join('/') : ''; }
@@ -58,8 +58,10 @@
     return result;
   }
   async function persist(next) {
-    if (connected) await api('/records', { method: 'PUT', body: JSON.stringify(next) });
-    records = next;
+    if (connected) {
+      await api('/records', { method: 'PUT', body: JSON.stringify(next) });
+      records = await api('/records');
+    } else records = next;
     localStorage.setItem(KEY, JSON.stringify(records));
     render();
   }
@@ -75,7 +77,7 @@
       const opCell = cell(row, ''); const op = document.createElement('span'); op.className = 'badge ' + record.operation.toLowerCase(); op.textContent = record.operation; opCell.append(op);
       cell(row, record.plate); cell(row, record.typology); cell(row, formatted(record.issuedAt)); cell(row, formatted(dueDate(record)));
       const current = status(record), statusCell = cell(row, ''); const badge = document.createElement('span');
-      badge.className = 'badge ' + (current === 'Em dia' ? 'ok' : ['Solicitado', 'Vence hoje'].includes(current) ? 'warn' : current === 'Pendente' ? 'neutral' : 'bad');
+      badge.className = 'badge ' + (current === 'Em dia' ? 'ok' : ['Solicitado', 'Aviso pendente', 'Vence hoje'].includes(current) ? 'warn' : current === 'Pendente' ? 'neutral' : 'bad');
       badge.textContent = current; statusCell.append(badge);
       cell(row, record.driverPhone || '—');
       const actions = cell(row, ''); actions.className = 'actions';
@@ -87,7 +89,7 @@
     }
     $('totalCount').textContent = records.length;
     $('okCount').textContent = records.filter(r => status(r) === 'Em dia').length;
-    $('warningCount').textContent = records.filter(r => ['Solicitado', 'Vence hoje'].includes(status(r))).length;
+    $('warningCount').textContent = records.filter(r => ['Solicitado', 'Aviso pendente', 'Vence hoje'].includes(status(r))).length;
     $('expiredCount').textContent = records.filter(r => ['Vencido', 'Atrasado'].includes(status(r))).length;
   }
   function openForm(record) {

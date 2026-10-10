@@ -1,6 +1,6 @@
 # Checklist Blitz
 
-Painel público em GitHub Pages com registros Jet e Total independentes. O mesmo motorista pode aparecer nas duas operações. Jet vence 20 dias após a emissão; Total vence 15 dias após a emissão. O responsável escolhe de 0 a 20 dias antes do vencimento para o aviso; o padrão é 5 dias. Nesse período, o status passa para **Solicitado**. As tipologias disponíveis são 3/4, Toco, Truck, Cavalo/Carreta, Fiorino, Van e VUC.
+Painel público em GitHub Pages com registros Jet e Total independentes. O mesmo motorista pode aparecer nas duas operações. Jet vence 20 dias após a emissão; Total vence 15 dias após a emissão. O responsável escolhe de 0 a 20 dias antes do vencimento para o aviso; o padrão é 5 dias. Nesse período, o status é **Aviso pendente** até o serviço confirmar os envios para motorista e responsável; depois fica **Solicitado**. As tipologias disponíveis são 3/4, Toco, Truck, Cavalo/Carreta, Fiorino, Van e VUC.
 
 ## Estado atual
 
