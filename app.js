@@ -6,9 +6,7 @@
   const typologies = ['3/4', 'Toco', 'Truck', 'Cavalo/Carreta', 'Fiorino', 'Van', 'VUC'];
   let filter = 'all';
   let alertDays = Number(localStorage.getItem('checklist-blitz-alert-days') ?? 5);
-  let apiUrl = localStorage.getItem('checklist-blitz-api-url') || '';
-  let apiToken = sessionStorage.getItem('checklist-blitz-api-token') || '';
-  let connected = false;
+  let soundEnabled = localStorage.getItem('checklist-blitz-sound') === 'yes';
 
   function parseDate(iso) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso || '')) return null;
@@ -46,23 +44,43 @@
   }
   let records = loadLocal();
   function message(text, error = false) {
-    $('connectionState').textContent = text;
-    $('connectionState').className = error ? 'hint error' : 'hint success';
+    $('settingsMessage').textContent = text;
+    $('settingsMessage').className = error ? 'hint error' : 'hint success';
   }
-  async function api(path, options = {}) {
-    const response = await fetch(apiUrl + path, {
-      ...options,
-      headers: { Authorization: 'Bearer ' + apiToken, 'Content-Type': 'application/json', ...(options.headers || {}) }
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Falha ao acessar o serviço');
-    return result;
+  async function playAlert() {
+    const Context = window.AudioContext || window.webkitAudioContext;
+    if (!Context) return false;
+    const context = new Context();
+    try {
+      await context.resume();
+      if (context.state !== 'running') return false;
+      for (const [index, frequency] of [784, 1046].entries()) {
+        const oscillator = context.createOscillator(), gain = context.createGain();
+        oscillator.type = 'sine'; oscillator.frequency.value = frequency;
+        gain.gain.setValueAtTime(0.0001, context.currentTime + index * 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + index * 0.3 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + index * 0.3 + 0.25);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(context.currentTime + index * 0.3);
+        oscillator.stop(context.currentTime + index * 0.3 + 0.26);
+      }
+      setTimeout(() => context.close(), 1000);
+      return true;
+    } catch (_) { await context.close(); return false; }
   }
-  async function persist(next) {
-    if (connected) {
-      await api('/records', { method: 'PUT', body: JSON.stringify(next) });
-      records = await api('/records');
-    } else records = next;
+  async function notifyDue(force = false) {
+    if (!soundEnabled) return;
+    const pending = records.filter(r => ['Aviso pendente', 'Vence hoje', 'Vencido'].includes(status(r)));
+    if (!pending.length) return;
+    const key = today() + ':' + pending.map(r => r.id + ':' + status(r)).sort().join(',');
+    if (!force && localStorage.getItem('checklist-blitz-last-sound') === key) return;
+    if (await playAlert()) {
+      localStorage.setItem('checklist-blitz-last-sound', key);
+      message(`${pending.length} checklist(s) precisam de atenção. Aviso sonoro ativo.`);
+    } else message('Clique em “Ativar som dos avisos” para liberar o áudio neste navegador.', true);
+  }
+  function persist(next) {
+    records = next;
     localStorage.setItem(KEY, JSON.stringify(records));
     render();
   }
@@ -86,60 +104,44 @@
         const button = document.createElement('button'); button.type = 'button'; button.className = 'small ' + style;
         button.textContent = label; button.dataset.action = action; button.dataset.id = record.id; actions.append(button);
       }
+      if (current === 'Aviso pendente') {
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'small secondary';
+        button.textContent = 'Marcar solicitado'; button.dataset.action = 'requested'; button.dataset.id = record.id; actions.prepend(button);
+      }
       body.append(row);
     }
     $('totalCount').textContent = records.length;
     $('okCount').textContent = records.filter(r => status(r) === 'Em dia').length;
     $('warningCount').textContent = records.filter(r => ['Solicitado', 'Aviso pendente', 'Vence hoje'].includes(status(r))).length;
     $('expiredCount').textContent = records.filter(r => status(r) === 'Vencido').length;
+    void notifyDue();
   }
   function openForm(record) {
     $('form').reset(); $('formMessage').textContent = ''; $('recordId').value = record?.id || '';
     for (const key of ['operation', 'driverName', 'driverPhone', 'plate', 'issuedAt', 'typology', 'tracker']) if (record) $(key).value = record[key] || '';
     updateDue(); $('form').classList.add('open'); $('driverName').focus();
   }
-  async function connect() {
-    const url = $('apiUrl').value.trim().replace(/\/+$/, '');
-    const token = $('apiToken').value.trim();
-    if (!/^https:\/\//.test(url) || !token) { message('Informe o endereço HTTPS do serviço e a chave de acesso.', true); return; }
-    apiUrl = url; apiToken = token;
-    try {
-      const [remote, settings] = await Promise.all([api('/records'), api('/settings')]);
-      connected = true;
-      alertDays = settings.alertDays;
-      $('alertDays').value = alertDays;
-      localStorage.setItem('checklist-blitz-alert-days', String(alertDays));
-      localStorage.setItem('checklist-blitz-api-url', url);
-      sessionStorage.setItem('checklist-blitz-api-token', token);
-      $('importBtn').hidden = !(records.length && remote.length === 0);
-      records = remote;
-      render();
-      message(remote.length ? 'Conectado. Cadastros compartilhados carregados.' : 'Conectado. O serviço ainda não tem cadastros.');
-    } catch (error) { connected = false; message('Não foi possível conectar: ' + error.message, true); }
-  }
-
-  $('apiUrl').value = apiUrl; $('apiToken').value = apiToken; $('alertDays').value = alertDays;
-  $('connectBtn').onclick = connect;
-  $('saveAlertDays').onclick = async () => {
+  $('alertDays').value = alertDays;
+  $('soundBtn').textContent = soundEnabled ? 'Som ativado' : 'Ativar som dos avisos';
+  $('soundBtn').onclick = async () => {
+    soundEnabled = true;
+    localStorage.setItem('checklist-blitz-sound', 'yes');
+    $('soundBtn').textContent = 'Som ativado';
+    if (records.some(r => ['Aviso pendente', 'Vence hoje', 'Vencido'].includes(status(r)))) await notifyDue(true);
+    else if (await playAlert()) message('Som ativado. Você ouvirá este sinal quando houver checklist em aviso ou vencido.');
+    else message('O navegador bloqueou o áudio. Verifique a permissão de som desta página.', true);
+  };
+  $('saveAlertDays').onclick = () => {
     const days = Number($('alertDays').value);
     if (!Number.isInteger(days) || days < 0 || days > 20) return message('Escolha de 0 a 20 dias.', true);
-    try {
-      if (connected) await api('/settings', { method: 'PUT', body: JSON.stringify({ alertDays: days }) });
-      alertDays = days;
-      localStorage.setItem('checklist-blitz-alert-days', String(days));
-      render(); message(connected ? 'Prazo salvo para todos os cadastros.' : 'Prazo salvo neste navegador. Conecte o serviço para usar nos disparos.');
-    } catch (error) { message('Não foi possível salvar o prazo: ' + error.message, true); }
-  };
-  $('importBtn').onclick = async () => {
-    const local = loadLocal();
-    if (!connected || !local.length || !confirm('Enviar ' + local.length + ' cadastro(s) locais para o serviço compartilhado?')) return;
-    try { await persist(local); $('importBtn').hidden = true; message('Cadastros enviados ao serviço.'); }
-    catch (error) { message('Falha ao enviar: ' + error.message, true); }
+    alertDays = days;
+    localStorage.setItem('checklist-blitz-alert-days', String(days));
+    render(); message('Prazo de aviso salvo neste navegador.');
   };
   $('newBtn').onclick = () => openForm();
   $('cancelBtn').onclick = () => $('form').classList.remove('open');
   $('operation').onchange = updateDue; $('issuedAt').onchange = updateDue;
-  $('form').onsubmit = async event => {
+  $('form').onsubmit = event => {
     event.preventDefault();
     const record = { id: $('recordId').value || crypto.randomUUID() };
     for (const key of ['operation', 'driverName', 'driverPhone', 'plate', 'issuedAt', 'typology', 'tracker']) record[key] = $(key).value.trim();
@@ -151,16 +153,18 @@
       $('formMessage').textContent = 'Informe o WhatsApp do motorista com DDD.'; $('formMessage').className = 'error'; return;
     }
     const next = [...records], index = next.findIndex(r => r.id === record.id);
+    if (index >= 0) record.alertSent = next[index].issuedAt === record.issuedAt && next[index].operation === record.operation && !!next[index].alertSent;
     if (index >= 0) next[index] = record; else next.push(record);
-    try { await persist(next); $('form').classList.remove('open'); }
+    try { persist(next); $('form').classList.remove('open'); }
     catch (error) { $('formMessage').textContent = 'Não foi possível salvar: ' + error.message; $('formMessage').className = 'error'; }
   };
-  $('rows').onclick = async event => {
+  $('rows').onclick = event => {
     const button = event.target.closest('button[data-action]'); if (!button) return;
     const record = records.find(r => r.id === button.dataset.id); if (!record) return;
     if (button.dataset.action === 'edit') return openForm(record);
+    if (button.dataset.action === 'requested') return persist(records.map(r => r.id === record.id ? { ...r, alertSent: true } : r));
     if (button.dataset.action === 'delete' && confirm('Excluir o cadastro de ' + record.driverName + ' na ' + record.operation + '?')) {
-      try { await persist(records.filter(r => r.id !== record.id)); }
+      try { persist(records.filter(r => r.id !== record.id)); }
       catch (error) { message('Não foi possível excluir: ' + error.message, true); }
     }
   };
@@ -170,6 +174,5 @@
     render();
   });
   render();
-  if (apiUrl && apiToken) connect();
-  setInterval(() => { if (connected) api('/records').then(remote => { records = remote; render(); }).catch(() => message('Conexão perdida. Verifique o serviço.', true)); else render(); }, 60000);
+  setInterval(render, 60000);
 })();
