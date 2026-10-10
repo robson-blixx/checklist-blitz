@@ -52,7 +52,7 @@ def connect():
 
 def clean_phone(value):
     digits = re.sub(r"\D", "", str(value or ""))
-    return digits if digits.startswith("55") else ("55" + digits if digits else "")
+    return "55" + digits if len(digits) in (10, 11) else digits
 
 
 def validate_record(data):
@@ -69,7 +69,7 @@ def validate_record(data):
     if not name or not plate:
         raise ValueError("Motorista e placa são obrigatórios")
     driver_phone = clean_phone(data.get("driverPhone"))
-    if driver_phone and not 12 <= len(driver_phone) <= 13:
+    if not 12 <= len(driver_phone) <= 13:
         raise ValueError("WhatsApp do motorista inválido")
     return {
         "id": str(data.get("id") or uuid.uuid4()),

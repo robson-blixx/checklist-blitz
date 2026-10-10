@@ -144,8 +144,8 @@
     if (!operations[record.operation] || !record.driverName || !record.plate || !parseDate(record.issuedAt) || !typologies.includes(record.typology)) {
       $('formMessage').textContent = 'Preencha operação, motorista, placa, emissão e tipologia.'; $('formMessage').className = 'error'; return;
     }
-    if (record.driverPhone && record.driverPhone.length < 10) {
-      $('formMessage').textContent = 'Informe WhatsApp com DDD ou deixe o campo vazio.'; $('formMessage').className = 'error'; return;
+    if (![10, 11, 12, 13].includes(record.driverPhone.length)) {
+      $('formMessage').textContent = 'Informe o WhatsApp do motorista com DDD.'; $('formMessage').className = 'error'; return;
     }
     const next = [...records], index = next.findIndex(r => r.id === record.id);
     if (index >= 0) next[index] = record; else next.push(record);
